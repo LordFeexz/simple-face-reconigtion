@@ -1,5 +1,5 @@
 import cv2
-from typing import Sequence, List
+from typing import List
 from os import path
 import numpy as np
 import face_recognition
@@ -9,7 +9,6 @@ from datetime import datetime
 
 class App:
     def __init__(self) -> None:
-        self.face_ref = cv2.CascadeClassifier('face_ref.xml')
         self.camera = cv2.VideoCapture(index=0)
         self.SAVED_FILE = 'known_faces.npy'
         self.known_faces_encodings, self.known_faces_names = self.load_known_face()
@@ -28,7 +27,9 @@ class App:
         if name:
             face_locations = face_recognition.face_locations(frame)
             face_encodings = face_recognition.face_encodings(
-                frame, face_locations)
+                frame,
+                face_locations
+            )
             if face_encodings:
                 self.known_faces_encodings.append(face_encodings[0])
                 self.known_faces_names.append(name)
@@ -41,16 +42,20 @@ class App:
             return data['encodings'], data['names']
         return [], []
 
-    def save_data(self, name):
+    def save_data(self, name: str) -> None:
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        new_data = pd.DataFrame([[name, current_time]],
-                                columns=["Name", "Time"])
+        new_data = pd.DataFrame(
+            [[name, current_time]],
+            columns=["Name", "Time"]
+        )
         self.df = pd.concat([self.df, new_data], ignore_index=True)
 
-    def drawer_box(self, frame):
+    def drawer_box(self, frame: cv2.typing.MatLike) -> None:
         face_locations = face_recognition.face_locations(frame)
         face_encodings = face_recognition.face_encodings(
-            frame, face_locations)
+            frame,
+            face_locations
+        )
 
         for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
             matches = face_recognition.compare_faces(
@@ -59,17 +64,34 @@ class App:
 
             if self.known_faces_encodings:
                 face_distances = face_recognition.face_distance(
-                    self.known_faces_encodings, face_encoding)
+                    self.known_faces_encodings,
+                    face_encoding
+                )
                 best_match_index = np.argmin(face_distances)
                 if matches[best_match_index]:
                     name = self.known_faces_names[best_match_index]
 
-            cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
-            cv2.rectangle(frame, (left, bottom - 35),
-                          (right, bottom), (0, 0, 255), cv2.FILLED)
-            cv2.putText(frame, name, (left + 6, bottom - 6),
-                        cv2.FONT_HERSHEY_DUPLEX, 0.8, (255, 255, 255), 1)
-
+            cv2.rectangle(
+                frame,
+                (left, top),
+                (right, bottom),
+                (0, 0, 255),
+                2
+            )
+            cv2.rectangle(
+                frame,
+                (left, bottom - 35),
+                (right, bottom),
+                (0, 0, 255),
+                cv2.FILLED
+            )
+            cv2.putText(
+                frame,
+                name,
+                (left + 6, bottom - 6),
+                cv2.FONT_HERSHEY_DUPLEX, 0.8, (255, 255, 255),
+                1
+            )
             self.save_data(name)
 
     def start(self):
@@ -78,14 +100,16 @@ class App:
             if not ret:
                 break
 
-            self.drawer_box(frame=frame)
-            cv2.imshow('Face Detection', frame)
+            small_frame = cv2.resize(frame, (0, 0), fx=0.7, fy=0.7)
+
+            self.drawer_box(frame=small_frame)
+            cv2.imshow('Face Detection', small_frame)
 
             key = cv2.waitKey(1) & 0xFF
             if key == ord('q'):
                 self.on_close()
             elif key == ord('n'):
-                self.add_new_faces(frame=frame)
+                self.add_new_faces(frame=small_frame)
 
     def on_close(self):
         self.camera.release()
@@ -94,5 +118,4 @@ class App:
 
 
 if __name__ == "__main__":
-    app = App()
-    app.start()
+    App().start()
