@@ -61,6 +61,7 @@ class App:
             matches = face_recognition.compare_faces(
                 self.known_faces_encodings, face_encoding)
             name = "Unknown"
+            color = (0, 0, 255)
 
             if self.known_faces_encodings:
                 face_distances = face_recognition.face_distance(
@@ -70,19 +71,20 @@ class App:
                 best_match_index = np.argmin(face_distances)
                 if matches[best_match_index]:
                     name = self.known_faces_names[best_match_index]
+                    color = (255, 0, 0)
 
             cv2.rectangle(
                 frame,
                 (left, top),
                 (right, bottom),
-                (0, 0, 255),
+                color,
                 2
             )
             cv2.rectangle(
                 frame,
                 (left, bottom - 35),
                 (right, bottom),
-                (0, 0, 255),
+                color,
                 cv2.FILLED
             )
             cv2.putText(
